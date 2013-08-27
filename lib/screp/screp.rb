@@ -1,11 +1,13 @@
 require_relative 'text_utilities'
 require_relative 'http_utilities'
+require_relative 'general_utilities'
+
 require 'csv'
 
 module Screp
 
   class Screp
-    include TextUtilities, HttpUtilities
+    include TextUtilities, HttpUtilities, GeneralUtilities
 
     def initialize(url)
       @url = url
@@ -17,7 +19,7 @@ module Screp
       @download = []
     end
 
-    attr_accessor :csv, :download, :page
+    attr_accessor :page
 
     ### PARSING ###
 
@@ -63,9 +65,19 @@ module Screp
 
     ### CSV LOGGING ###
     
-    def init_csv(csv_filename = nil, *csv_headers)
-      @csv_filename = csv_filename ||= "#{filename_scrub(@url)}.csv"
-      @csv << csv_headers if !csv_headers.empty?
+    def csv(*items)
+      @csv << items
+    end
+    
+    def init_csv(options = {})
+      check_options(options, :filename, :headers)
+
+      defaults = 
+        {filename: "#{filename_scrub(@url)}.csv", 
+          headers: []}.merge! options
+
+      @csv_filename = defaults[:filename]
+      @csv << defaults[:headers] if !defaults[:headers].empty?
     end
 
     def output_csv
@@ -80,6 +92,10 @@ module Screp
 
 
     ### DOWNLOADING ###
+    
+    def download(download)
+      @download << download
+    end
 
     def init_download(overwrite_existing = false, download_directory = nil) 
       @download_directory = download_directory ||= filename_scrub(@url)

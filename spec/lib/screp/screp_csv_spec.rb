@@ -23,7 +23,7 @@ describe Screp::Screp do
 
     it "ouputs correct filename" do 
       screp = Screp::Screp.new('csv_test_null_content.html')
-      screp.init_csv('differentfilename.csv')
+      screp.init_csv(filename: 'differentfilename.csv')
 
       screp.output_csv
 
@@ -41,11 +41,25 @@ describe Screp::Screp do
 
     it "writes headers if specified" do 
       screp = Screp::Screp.new('csv_test_null_content.html')
-      screp.init_csv('differentfilename.csv', 'header1', 'header2', 'header3')
+      screp.init_csv(headers: ['header1', 'header2', 'header3'])
 
       screp.output_csv
 
-      File.readlines('differentfilename.csv').first.strip.should == 'header1,header2,header3'
+      File.readlines('csv_test_null_content_html.csv').first.strip.should == 'header1,header2,header3'
+    end
+
+    it "writes data correctly" do 
+      screp = Screp::Screp.new('csv_test_null_content.html')
+
+      screp.csv 'test1', 'test2'
+      screp.csv 'test3', 'test4'
+
+      screp.output_csv
+
+      lines = File.readlines('csv_test_null_content_html.csv')
+      
+      lines.first.strip.should == 'test1,test2'
+      lines.last.strip.should == 'test3,test4'
     end
 
   end
