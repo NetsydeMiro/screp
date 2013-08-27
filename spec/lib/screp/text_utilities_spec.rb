@@ -3,9 +3,9 @@ require_relative '../../spec_helper'
 class Dummy
 end
 
-describe TextUtilities do
+describe Screp::TextUtilities do
 
-  let(:tu) { Dummy.new.extend(TextUtilities) }
+  let(:tu) { Dummy.new.extend(Screp::TextUtilities) }
 
   describe '#titlize' do
 
