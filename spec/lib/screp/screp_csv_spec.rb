@@ -10,14 +10,14 @@ describe Screp::Screp do
 
     before :all do 
       Dir.chdir('spec/fixtures')
-      clear_csv_files
     end
 
-    after :each do 
-      clear_csv_files
+    before :each do
+      clear_files('.', '*.csv')
     end
 
     after :all do 
+      clear_files('.', '*.csv')
       Dir.chdir('../..')
     end
 
