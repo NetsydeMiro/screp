@@ -2,28 +2,11 @@ require_relative '../../spec_helper'
 
 describe Screp::Screp do
 
-  def fixture_file(filename)
-    File.join('spec/fixtures', filename)
-  end
-
-  def temp_file(filename)
-    File.join('tmp', filename)
-  end
-
-  def null_input
-    fixture_file 'null_content.html'
-  end
-
   def csv_output
     temp_file 'test.csv'
   end
 
   describe "CSV Logging" do 
-
-    before :all do 
-      Dir.mkdir('tmp') if not Dir.exist?('tmp')
-      FileUtils.rm_rf Dir.glob('tmp/*')
-    end
 
     after :each do
       FileUtils.rm_rf Dir.glob('tmp/*')

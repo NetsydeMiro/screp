@@ -72,12 +72,8 @@ module Screp
     def init_csv(options = {})
       check_options(options, :filename, :headers)
 
-      defaults = 
-        {filename: "#{filename_scrub(@url)}.csv", 
-          headers: []}.merge! options
-
-      @csv_filename = defaults[:filename]
-      @csv << defaults[:headers] if !defaults[:headers].empty?
+      @csv_filename = options[:filename] || "#{filename_scrub(@url)}.csv"
+      @csv << options[:headers] if options[:headers]
     end
 
     def output_csv
@@ -97,11 +93,9 @@ module Screp
       @download << download
     end
 
-    def init_download(overwrite_existing = false, download_directory = nil) 
-      @download_directory = download_directory ||= filename_scrub(@url)
-      @overwrite_existing = overwrite_existing
-
-      Dir.mkdir(@download_directory) if !Dir.exists?(@download_directory)
+    def init_download(options = {})
+      @directory = options[:directory] || filename_scrub(@url)
+      @overwrite = !options[:overwrite].nil? && options[:overwrite]
     end
 
     def perform_download(&progress)
@@ -111,7 +105,9 @@ module Screp
         print "#{cr_clear}Downloading file #{current_dl} of #{total_dls}, #{dl.values.last}"
       end
 
-      init_download if !@download_directory
+      init_download if !@directory
+
+      Dir.mkdir(@directory) if !Dir.exists?(@directory)
 
       existing_downloads = []
       successful_downloads = []
@@ -125,9 +121,9 @@ module Screp
 
         remote_url = dl.keys.first
         local_filename = dl[remote_url]
-        local_filepath = File.join(@download_directory, local_filename)
+        local_filepath = File.join(@directory, local_filename)
 
-        if !@overwrite_existing && File.exists?(local_filepath)
+        if !@overwrite && File.exists?(local_filepath)
           existing_downloads << dl
         else
           begin
@@ -151,7 +147,7 @@ module Screp
     end
 
     def create_download_report(failed, existing, succeeded)
-      CSV.open(File.join(@download_directory, "download_report_#{filename_scrub(Time.now.to_s)}.csv"), 'w') do |csv|
+      CSV.open(File.join(@directory, "download_report_#{filename_scrub(Time.now.to_s)}.csv"), 'w') do |csv|
         csv << ["Failed", "Pre-existing", "Succeeded", "Total"]
         csv << [failed.length, existing.length, succeeded.length]
         csv << []
