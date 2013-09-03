@@ -8,6 +8,14 @@ describe Screp::Screp do
       Screp::Screp.new('spec/fixtures/table.html')
     end
 
+    describe "#method_missing" do 
+      it "raises error if it or nokogiri doesn't handle the method" do
+        expect {
+          table.dummy_method
+        }.to raise_error NoMethodError
+      end
+    end
+
     describe "#count" do 
       it "finds the correct count" do 
         table.count('tr').should == 3

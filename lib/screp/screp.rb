@@ -21,6 +21,7 @@ module Screp
 
     attr_accessor :page
 
+
     ### PARSING ###
 
     def count(selector)
@@ -39,7 +40,7 @@ module Screp
     end
 
     def first(selector, &block)
-      #require 'pry'; bind.pry
+
       if block
         each(selector, 0, &block)
       else
@@ -62,6 +63,7 @@ module Screp
         super
       end
     end
+
 
     ### CSV LOGGING ###
 
@@ -89,13 +91,13 @@ module Screp
 
     ### DOWNLOADING ###
 
-
     def download(download)
       @downloads << format_download(download)
     end
 
-    def update_progress(current, total, filename)
-      print "\r\eDownloading file #{current} of #{total}, #{filename}".ljust(80)[0..79]
+    def progress(current, total, filename)
+      percentage = '%.1f' % (current.to_f / total * 100)
+      "\r\e#{current}/#{total} (#{percentage}%) Downloading #{filename}".ljust(80)[0..79]
     end
 
     def init_download(options = {})
@@ -103,15 +105,15 @@ module Screp
       @overwrite = !options[:overwrite].nil? && options[:overwrite]
     end
 
-    def perform_download(&progress)
+    def perform_download(out = $stdout, err = $stderr)
 
       init_download if !@directory
 
       Dir.mkdir(@directory) if !Dir.exists?(@directory)
 
-      existing_downloads = []
-      successful_downloads = []
-      failed_downloads = []
+      existing = []
+      succeeded = []
+      failed = []
 
       total_downloads = @downloads.length
 
@@ -120,56 +122,67 @@ module Screp
         remote_url = download.keys.first
         local_filename = download[remote_url]
 
-        update_progress index+1, total_downloads, local_filename
+        err.print progress(index+1, total_downloads, local_filename)
 
         local_filepath = File.join(@directory, local_filename)
 
         if !@overwrite && File.exists?(local_filepath)
-          existing_downloads << download
+          existing << download
         else
           begin
             temp_file = open(remote_url, 'rb')
             local_file = File.open(local_filepath, 'w+b') 
             local_file.write(temp_file.read)
             local_file.close
-            successful_downloads << download
+            temp_file.close
+            succeeded << download
           rescue SignalException => signal
             # this is so that we can ctrl-c to end the program
             File.delete(local_filepath) if File.exists?(local_filepath)
             raise signal
           rescue Exception => ex
-            failed_downloads << download.merge(ex: ex)
+            failed << download.merge(ex: ex)
             File.delete(local_filepath) if File.exists?(local_filepath)
           end
         end
       end
 
-      create_download_report(failed_downloads, 
-                             existing_downloads, 
-                             successful_downloads)
+      report_name = create_download_report(failed, existing, succeeded)
+
+      out.puts "Download complete"
+      out.puts "Failed: #{failed.count}. Pre-existing: #{existing.count}. Succeeded: #{succeeded.count}."
+      out.puts "See #{report_name} for more details."
+
     end
 
     def create_download_report(failed, existing, succeeded)
-      CSV.open(File.join(@directory, "download_report_#{filename_scrub(Time.now.to_s)}.csv"), 'w') do |csv|
-        csv << ["Failed", "Pre-existing", "Succeeded", "Total"]
+      report_name = File.join @directory, "download_report_#{filename_scrub(Time.now.to_s)}.csv"
+
+      CSV.open(report_name, 'w') do |csv|
+        csv << ["Failed", "Pre-existing", "Succeeded"]
         csv << [failed.length, existing.length, succeeded.length]
         csv << []
 
         csv << ["Remote Url", "Local Filename", "Status"]
+
         failed.each do |dl|
           ex = dl.delete(:ex)
           mapping = dl.shift
           csv << [mapping[0], mapping[1], ex]
         end
+
         existing.each do |dl|
           mapping = dl.shift
           csv << [mapping[0], mapping[1], "Pre-existing"]
         end
+
         succeeded.each do |dl|
           mapping = dl.shift
           csv << [mapping[0], mapping[1], "Success"]
         end
       end
+
+      report_name
     end
   end
 end
