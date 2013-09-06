@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe Screp::Screp do
 
-  describe "Logging Functionality" do 
+  describe "Output Functionality" do 
 
     let(:out){ StringIO.new }
     let(:err){ StringIO.new }

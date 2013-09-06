@@ -67,18 +67,18 @@ module Screp
 
     ### CSV LOGGING ###
 
-    def csv(*items)
+    def log(*items)
       @csv << items
     end
 
-    def init_csv(options = {})
+    def init_log(options = {})
       check_options(options, :filename, :headers)
 
       @csv_filename = options[:filename] || "#{filename_scrub(@url)}.csv"
       @csv << options[:headers] if options[:headers]
     end
 
-    def output_csv
+    def write_log
       init_csv if !@csv_filename
 
       CSV.open(@csv_filename, 'w') do |csv|
@@ -147,7 +147,7 @@ module Screp
         end
       end
 
-      report_name = create_download_report(failed, existing, succeeded)
+      report_name = write_download_report(failed, existing, succeeded)
 
       out.puts "Download complete"
       out.puts "Failed: #{failed.count}. Pre-existing: #{existing.count}. Succeeded: #{succeeded.count}."
@@ -155,7 +155,7 @@ module Screp
 
     end
 
-    def create_download_report(failed, existing, succeeded)
+    def write_download_report(failed, existing, succeeded)
       report_name = File.join @directory, "download_report_#{filename_scrub(Time.now.to_s)}.csv"
 
       CSV.open(report_name, 'w') do |csv|

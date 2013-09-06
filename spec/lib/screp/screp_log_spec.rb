@@ -6,7 +6,7 @@ describe Screp::Screp do
     temp_file 'test.csv'
   end
 
-  describe "CSV Logging" do 
+  describe "Logging Functionality" do 
 
     after :each do
       FileUtils.rm_rf Dir.glob('tmp/*')
@@ -14,9 +14,9 @@ describe Screp::Screp do
 
     it "ouputs correct default filename" do 
       screp = Screp::Screp.new('spec/fixtures/null_content.html')
-      screp.init_csv
+      screp.init_log
 
-      screp.output_csv
+      screp.write_log
 
       File.exists?('spec_fixtures_null_content_html.csv').should be_true
 
@@ -25,8 +25,8 @@ describe Screp::Screp do
 
     it "ouputs correct filename" do 
       screp = Screp::Screp.new(null_input)
-      screp.init_csv(filename: temp_file('differentfilename.csv'))
-      screp.output_csv
+      screp.init_log(filename: temp_file('differentfilename.csv'))
+      screp.write_log
 
       File.exists?(temp_file 'differentfilename.csv').should be_true
     end
@@ -34,22 +34,22 @@ describe Screp::Screp do
 
     it "writes headers if specified" do 
       screp = Screp::Screp.new(null_input)
-      screp.init_csv(filename: csv_output, 
+      screp.init_log(filename: csv_output, 
                      headers: ['header1', 'header2', 'header3'])
 
-      screp.output_csv
+      screp.write_log
 
       File.readlines(csv_output).first.strip.should == 'header1,header2,header3'
     end
 
     it "writes data correctly" do 
       screp = Screp::Screp.new(null_input)
-      screp.init_csv(filename: csv_output)
+      screp.init_log(filename: csv_output)
 
-      screp.csv 'test1', 'test2'
-      screp.csv 'test3', 'test4'
+      screp.log 'test1', 'test2'
+      screp.log 'test3', 'test4'
 
-      screp.output_csv
+      screp.write_log
 
       lines = File.readlines(csv_output)
       
