@@ -54,12 +54,27 @@ describe Screp::Screp do
       File.readlines(csv_output).first.strip.should == 'header1,header2,header3'
     end
 
-    it "writes data correctly" do 
+    it "writes data correctly when provided as arguments" do 
       screp = Screp::Screp.new(null_input)
       screp.init_log(filename: csv_output)
 
       screp.log 'test1', 'test2'
       screp.log 'test3', 'test4'
+
+      screp.write_log
+
+      lines = File.readlines(csv_output)
+      
+      lines.first.strip.should == 'test1,test2'
+      lines.last.strip.should == 'test3,test4'
+    end
+
+    it "writes data correctly when provided as array" do 
+      screp = Screp::Screp.new(null_input)
+      screp.init_log(filename: csv_output)
+
+      screp.log ['test1', 'test2']
+      screp.log ['test3', 'test4']
 
       screp.write_log
 

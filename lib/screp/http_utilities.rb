@@ -15,5 +15,16 @@ module Screp
     def nbsp
       @nbsp ||= Nokogiri::HTML("&nbsp;").text
     end
+
+    def links(node = selected)
+      result = []
+
+      if node.name == 'a'
+        result << {node.text => node.attributes['href'].value}
+      end
+
+      node.children.reduce(result){|acc, child| result + links(child)}
+    end
+
   end
 end

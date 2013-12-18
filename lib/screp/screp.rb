@@ -13,7 +13,7 @@ module Screp
       @url = url
 
       @page = Nokogiri::HTML(open(@url))
-      @selected = [@page]
+      @selection_stack = [@page]
 
       @csv = []
       @downloads = []
@@ -23,19 +23,23 @@ module Screp
 
 
     ### PARSING ###
+    
+    def selected
+      @selection_stack.last
+    end
 
     def count(selector)
-      @selected.last.css(selector).count
+      selected.css(selector).count
     end
 
     def each(*args, &block)
       selector, range = args
       range ||= (0..-1)
       range = (range..range) if range.class == Fixnum
-      @selected.last.css(selector)[range].each_with_index do |selected, index|
-        @selected.push selected
+      selected.css(selector)[range].each_with_index do |selected, index|
+        @selection_stack.push selected
         instance_exec index, &block
-        @selected.pop 
+        @selection_stack.pop 
       end
     end
 
@@ -44,7 +48,7 @@ module Screp
       if block
         each(selector, 0, &block)
       else
-        @selected.last.css(selector).first
+        selected.css(selector).first
       end
     end
 
@@ -52,13 +56,13 @@ module Screp
       if block
         each(selector, -1, &block)
       else
-        @selected.last.css(selector).last
+        selected.css(selector).last
       end
     end
 
     def method_missing(meth, *args, &block)
-      if @selected.last.respond_to? meth
-        @selected.last.send meth, *args, &block
+      if selected.respond_to? meth
+        selected.send meth, *args, &block
       else
         super
       end
@@ -68,7 +72,13 @@ module Screp
     ### CSV LOGGING ###
 
     def log(*items)
-      @csv << items
+      if items.length == 1 and items.first.class == Array
+        # can log an array
+        @csv << items.first
+      else
+        # or a bunch of arguments
+        @csv << items
+      end
     end
 
     def init_log(options = {})
