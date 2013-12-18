@@ -12,10 +12,20 @@ describe Screp::Screp do
       FileUtils.rm_rf Dir.glob('tmp/*')
     end
 
+    it "doesn't log if no info logged" do 
+      screp = Screp::Screp.new('spec/fixtures/null_content.html')
+      screp.init_log
+
+      screp.write_log
+
+      File.exists?('spec_fixtures_null_content_html.csv').should be_false
+    end
+
     it "ouputs correct default filename" do 
       screp = Screp::Screp.new('spec/fixtures/null_content.html')
       screp.init_log
 
+      screp.log "Test"
       screp.write_log
 
       File.exists?('spec_fixtures_null_content_html.csv').should be_true
@@ -26,6 +36,8 @@ describe Screp::Screp do
     it "ouputs correct filename" do 
       screp = Screp::Screp.new(null_input)
       screp.init_log(filename: temp_file('differentfilename.csv'))
+
+      screp.log "Test"
       screp.write_log
 
       File.exists?(temp_file 'differentfilename.csv').should be_true

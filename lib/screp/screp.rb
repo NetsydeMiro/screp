@@ -19,7 +19,7 @@ module Screp
       @downloads = []
     end
 
-    attr_accessor :page
+    attr_accessor :page, :csv, :downloads
 
 
     ### PARSING ###
@@ -78,16 +78,18 @@ module Screp
       @csv << options[:headers] if options[:headers]
     end
 
-    def write_log
-      init_csv if !@csv_filename
+    def write_log(out = $stdout, err = $stderr)
 
-      CSV.open(@csv_filename, 'w') do |csv|
-        @csv.each do |row|
-          csv << row
+      if @csv.length > 0
+        init_log if !@csv_filename
+
+        CSV.open(@csv_filename, 'w') do |csv|
+          @csv.each do |row|
+            csv << row
+          end
         end
       end
     end
-
 
     ### DOWNLOADING ###
 
@@ -107,51 +109,54 @@ module Screp
 
     def perform_download(out = $stdout, err = $stderr)
 
-      init_download if !@directory
+      if @downloads.length > 0
 
-      Dir.mkdir(@directory) if !Dir.exists?(@directory)
+        init_download if !@directory
 
-      existing = []
-      succeeded = []
-      failed = []
+        Dir.mkdir(@directory) if !Dir.exists?(@directory)
 
-      total_downloads = @downloads.length
+        existing = []
+        succeeded = []
+        failed = []
 
-      @downloads.each_with_index do |download, index|
+        total_downloads = @downloads.length
 
-        remote_url = download.keys.first
-        local_filename = download[remote_url]
+        @downloads.each_with_index do |download, index|
 
-        err.print progress(index+1, total_downloads, local_filename)
+          remote_url = download.keys.first
+          local_filename = download[remote_url]
 
-        local_filepath = File.join(@directory, local_filename)
+          err.print progress(index+1, total_downloads, local_filename)
 
-        if !@overwrite && File.exists?(local_filepath)
-          existing << download
-        else
-          begin
-            temp_file = open(remote_url, 'rb')
-            local_file = File.open(local_filepath, 'w+b') 
-            local_file.write(temp_file.read)
-            local_file.close
-            temp_file.close
-            succeeded << download
-          rescue SignalException => signal
-            # this is so that we can ctrl-c to end the program
-            File.delete(local_filepath) if File.exists?(local_filepath)
-            raise signal
-          rescue Exception => ex
-            failed << download.merge(ex: ex)
-            File.delete(local_filepath) if File.exists?(local_filepath)
+          local_filepath = File.join(@directory, local_filename)
+
+          if !@overwrite && File.exists?(local_filepath)
+            existing << download
+          else
+            begin
+              temp_file = open(remote_url, 'rb')
+              local_file = File.open(local_filepath, 'w+b') 
+              local_file.write(temp_file.read)
+              local_file.close
+              temp_file.close
+              succeeded << download
+            rescue SignalException => signal
+              # this is so that we can ctrl-c to end the program
+              File.delete(local_filepath) if File.exists?(local_filepath)
+              raise signal
+            rescue Exception => ex
+              failed << download.merge(ex: ex)
+              File.delete(local_filepath) if File.exists?(local_filepath)
+            end
           end
         end
+
+        report_name = write_download_report(failed, existing, succeeded)
+
+        out.puts "Download complete"
+        out.puts "Failed: #{failed.count}. Pre-existing: #{existing.count}. Succeeded: #{succeeded.count}."
+        out.puts "See #{report_name} for more details."
       end
-
-      report_name = write_download_report(failed, existing, succeeded)
-
-      out.puts "Download complete"
-      out.puts "Failed: #{failed.count}. Pre-existing: #{existing.count}. Succeeded: #{succeeded.count}."
-      out.puts "See #{report_name} for more details."
 
     end
 

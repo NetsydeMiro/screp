@@ -12,9 +12,20 @@ describe Screp::Screp do
       FileUtils.rm_rf Dir.glob('tmp/*')
     end
 
+    it "doesn't download if no downloads present" do 
+      screp = Screp::Screp.new('spec/fixtures/null_content.html')
+      screp.init_download
+
+      screp.perform_download out, err
+
+      Dir.exists?('spec_fixtures_null_content_html').should be_false
+    end
+
     it "creates correct default directory" do 
       screp = Screp::Screp.new('spec/fixtures/null_content.html')
       screp.init_download
+
+      screp.download fixture_file('download.txt')
 
       screp.perform_download out, err
 
@@ -26,6 +37,8 @@ describe Screp::Screp do
     it "creates correct specified directory" do 
       screp = Screp::Screp.new('spec/fixtures/null_content.html')
       screp.init_download(directory: temp_file('download_directory'))
+
+      screp.download fixture_file('download.txt')
 
       screp.perform_download out, err
 

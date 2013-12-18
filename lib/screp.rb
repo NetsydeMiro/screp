@@ -6,12 +6,12 @@ require_relative "screp/screp"
 module Screp
 
     def self.scrape(url, &block)
-      scraper = Screp::Screp.new(url)
+      scraper = Screp.new(url)
 
       scraper.instance_eval &block
 
-      scraper.output_csv unless @csv.length == 0
-      scraper.perform_download unless @download.length == 0 
+      scraper.write_log
+      scraper.perform_download
     end
 
 end
