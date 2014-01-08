@@ -1,8 +1,8 @@
 require_relative '../../spec_helper'
 
 class Dummy
-  def initialize
-    @url = 'http://dummy.com'
+  def url
+    'http://dummy.com'
   end
 end
 

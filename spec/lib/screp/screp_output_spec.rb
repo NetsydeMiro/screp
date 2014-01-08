@@ -4,8 +4,8 @@ describe Screp::Screp do
 
   describe "Output Functionality" do 
 
-    let(:out){ StringIO.new }
-    let(:err){ StringIO.new }
+    let(:mock_out){ StringIO.new }
+    let(:mock_err){ StringIO.new }
 
     after :each do
       FileUtils.rm_rf Dir.glob('tmp/*')
@@ -26,16 +26,16 @@ describe Screp::Screp do
     it "updates progress" do 
       names = create_fixtures(5)
 
-      screp = Screp::Screp.new('spec/fixtures/null_content.html')
+      screp = Screp::Screp.new(out: mock_out, err: mock_err)
       screp.init_download(directory: temp_file('download_directory'))
 
       names.each do |name|
         screp.download name
       end
 
-      err.should_receive(:print).exactly(5).times
+      mock_err.should_receive(:print).exactly(5).times
 
-      screp.perform_download out, err
+      screp.perform_download
 
       names.each {|n| File.delete n}
     end

@@ -5,7 +5,9 @@ describe Screp::Screp do
   describe "Parsing" do 
 
     let :table do 
-      Screp::Screp.new('spec/fixtures/table.html')
+      screp = Screp::Screp.new(silent: true)
+      screp.scrape('spec/fixtures/table.html')
+      screp
     end
 
     describe "#method_missing" do 

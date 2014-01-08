@@ -9,27 +9,54 @@ module Screp
   class Screp
     include TextUtilities, HttpUtilities, GeneralUtilities
 
-    def initialize(url)
-      @url = url
+    # can take boolean value for option :silent
+    # and IO options for options :out and :err
+    def initialize(options = {})
 
-      @page = Nokogiri::HTML(open(@url))
-      @selection_stack = [@page]
+      opts = {silent: false, out: $stdout, err: $stderr}.merge(options)
 
+      @out, @err = if opts[:silent]
+                     [StringIO.new, StringIO.new]
+                   else
+                     [opts[:out], opts[:err]]
+                   end
+
+      @url_stack = []
+      @selection_stack = []
       @csv = []
       @downloads = []
     end
 
-    attr_accessor :page, :csv, :downloads
-
+    attr_accessor :csv, :downloads
 
     ### PARSING ###
-    
+
     def selected
-      @selection_stack.last
+      @selection_stack.last || @home_page
+    end
+
+    def url
+      @url_stack.last || @home_url
     end
 
     def count(selector)
       selected.css(selector).count
+    end
+
+    def scrape(url, &block)
+      @err.puts "\rParsing #{url}".ljust(80)[0..79]
+      page = Nokogiri::HTML(open(url))
+
+      # keep first page, in case we want to scrape or download 
+      # with default log file name after the scrape block
+      @home_url ||= url
+      @home_page ||= page
+
+      @url_stack.push url
+      @selection_stack.push page
+      instance_exec &block if block
+      @selection_stack.pop 
+      @url_stack.pop 
     end
 
     def each(*args, &block)
@@ -84,11 +111,11 @@ module Screp
     def init_log(options = {})
       check_options(options, :filename, :headers)
 
-      @csv_filename = options[:filename] || "#{filename_scrub(@url)}.csv"
+      @csv_filename = options[:filename] || "#{filename_scrub(url)}.csv"
       @csv << options[:headers] if options[:headers]
     end
 
-    def write_log(out = $stdout, err = $stderr)
+    def write_log
 
       if @csv.length > 0
         init_log if !@csv_filename
@@ -109,15 +136,15 @@ module Screp
 
     def progress(current, total, filename)
       percentage = '%.1f' % (current.to_f / total * 100)
-      "\r\e#{current}/#{total} (#{percentage}%) Downloading #{filename}".ljust(80)[0..79]
+      "\r#{current}/#{total} (#{percentage}%) Downloading #{filename}".ljust(80)[0..79]
     end
 
     def init_download(options = {})
-      @directory = options[:directory] || filename_scrub(@url)
+      @directory = options[:directory] || filename_scrub(url)
       @overwrite = !options[:overwrite].nil? && options[:overwrite]
     end
 
-    def perform_download(out = $stdout, err = $stderr)
+    def perform_download
 
       if @downloads.length > 0
 
@@ -136,7 +163,7 @@ module Screp
           remote_url = download.keys.first
           local_filename = download[remote_url]
 
-          err.print progress(index+1, total_downloads, local_filename)
+          @err.print progress(index+1, total_downloads, local_filename)
 
           local_filepath = File.join(@directory, local_filename)
 
@@ -163,9 +190,9 @@ module Screp
 
         report_name = write_download_report(failed, existing, succeeded)
 
-        out.puts "Download complete"
-        out.puts "Failed: #{failed.count}. Pre-existing: #{existing.count}. Succeeded: #{succeeded.count}."
-        out.puts "See #{report_name} for more details."
+        @out.puts "Download complete"
+        @out.puts "Failed: #{failed.count}. Pre-existing: #{existing.count}. Succeeded: #{succeeded.count}."
+        @out.puts "See #{report_name} for more details."
       end
 
     end
@@ -201,4 +228,3 @@ module Screp
     end
   end
 end
-
