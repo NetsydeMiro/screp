@@ -44,7 +44,7 @@ module Screp
     end
 
     def scrape(url, &block)
-      @err.puts "\rParsing #{url}".ljust(80)[0..79]
+      @err.print "\rParsing #{url}".ljust(80)[0..79]
       page = Nokogiri::HTML(open(url))
 
       # keep first page, in case we want to scrape or download 
